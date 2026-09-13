@@ -29,7 +29,7 @@ Instead of simply answering questions, the agent **understands the situation, de
 ## 🛠️ Agent Tools
 
 | Tool             | Function                                              | Purpose                                         |
-| ---------------- | ----------------------------------------------------- | ----------------------------------------------- |
+
 | 🕐 Time Tool     | `get_current_time()`                                  | Returns the current local time                  |
 | 📅 Date Tool     | `calculate_date(days)`                                | Calculates a future or past date                |
 | 💰 Expense Tool  | `calculate_expense(income, expenses)`                 | Calculates total expenses and remaining balance |
@@ -395,6 +395,7 @@ Interested in:
 
 ## 📌 Project Status
 
+
 **Status:** 🚀 Active Development
 
 **Current Version:** v1.0
@@ -406,3 +407,17 @@ Interested in:
 **Gradio Interface:** ✅ Implemented
 
 **GitHub Repository:** ✅ Available
+
+
+**Status:** 🚀 Active Development
+
+**Current Version:** v1.0
+
+**Core Features:** ✅ Completed
+
+**Multi-Tool Agent:** ✅ Implemented
+
+**Gradio Interface:** ✅ Implemented
+
+**GitHub Repository:** ✅ Available
+
