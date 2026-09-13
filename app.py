@@ -3,22 +3,71 @@ from agent import run_agent
 
 
 # ============================================================
+# TOOL INFORMATION
+# ============================================================
+
+TOOL_INFO = {
+    "get_current_time": ("🕐", "Current Time"),
+    "calculate_date": ("📅", "Date Calculation"),
+    "calculate_expense": ("💰", "Expense Analysis"),
+    "make_budget_decision": ("🧠", "Budget Decision"),
+}
+
+
+# ============================================================
 # CHAT FUNCTION
 # ============================================================
 
 def chat_with_agent(message, history):
 
-    if not message.strip():
-        return "⚠️ Please describe your situation."
+    if not message or not message.strip():
+        return (
+            "⚠️ Please describe your situation.",
+            "### 🛠️ Agent Activity\n\nNo tools used."
+        )
 
     try:
-        return run_agent(message)
+
+        result = run_agent(message)
+
+        response = result["response"]
+        tools_used = result["tools_used"]
+
+        if tools_used:
+
+            activity = "### 🛠️ Agent Activity\n\n"
+
+            for tool in tools_used:
+
+                icon, name = TOOL_INFO.get(
+                    tool,
+                    ("🔧", tool)
+                )
+
+                activity += (
+                    f"✅ {icon} **{name}**\n"
+                )
+
+            activity += (
+                "\n---\n"
+                "🧠 *Tools were selected autonomously "
+                "based on your situation.*"
+            )
+
+        else:
+
+            activity = (
+                "### 🛠️ Agent Activity\n\n"
+                "ℹ️ No external tools were required."
+            )
+
+        return response, activity
 
     except Exception as error:
+
         return (
-            "⚠️ Something went wrong while processing "
-            "your request.\n\n"
-            f"Error: {str(error)}"
+            "⚠️ Something went wrong while processing your request.",
+            f"### ❌ Error\n\n`{str(error)}`"
         )
 
 
@@ -27,32 +76,65 @@ def chat_with_agent(message, history):
 # ============================================================
 
 css = """
+
 body {
-    background: #f5f7fb;
+    background: #f4f6fb;
 }
 
 .gradio-container {
-    max-width: 1100px !important;
-    margin: auto;
+    max-width: 1150px !important;
+    margin: auto !important;
 }
+
+
+/* HEADER */
 
 #title {
     text-align: center;
+    font-size: 42px;
+    font-weight: 800;
+    margin-top: 20px;
     margin-bottom: 5px;
 }
 
 #subtitle {
     text-align: center;
-    color: #666;
-    margin-bottom: 25px;
+    font-size: 17px;
+    color: #667085;
+    margin-bottom: 30px;
 }
 
+
+/* TOOL CARDS */
+
 .tool-card {
-    border-radius: 12px;
-    padding: 15px;
+    border-radius: 16px;
+    padding: 18px;
     background: white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e4e7ec;
+    min-height: 125px;
 }
+
+
+/* ACTIVITY */
+
+.activity-panel {
+    border-radius: 16px;
+    padding: 18px;
+    background: white;
+    border: 1px solid #e4e7ec;
+}
+
+
+/* FOOTER */
+
+.footer {
+    text-align: center;
+    color: #667085;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
 """
 
 
@@ -65,9 +147,10 @@ with gr.Blocks(
     css=css
 ) as demo:
 
-    # --------------------------------------------------------
-    # TITLE
-    # --------------------------------------------------------
+
+    # ========================================================
+    # HEADER
+    # ========================================================
 
     gr.Markdown(
         """
@@ -78,53 +161,66 @@ with gr.Blocks(
 
     gr.Markdown(
         """
-        **AI-powered personal decision assistant**
+        ### AI-Powered Personal Decision-Support Assistant
 
-        Describe your everyday situation. LifeOps analyzes it,
-        selects the appropriate tools, and gives you a
-        practical recommendation.
+        **Describe a situation → Analyze → Decide → Recommend**
         """,
         elem_id="subtitle"
     )
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # TOOL CARDS
-    # --------------------------------------------------------
+    # ========================================================
 
     with gr.Row():
 
-        with gr.Column(elem_classes="tool-card"):
+        with gr.Column(
+            elem_classes="tool-card"
+        ):
+
             gr.Markdown(
                 """
-                ### 🕐 Time Tool
+                ## 🕐 Current Time
 
                 Get the current local time.
                 """
             )
 
-        with gr.Column(elem_classes="tool-card"):
+
+        with gr.Column(
+            elem_classes="tool-card"
+        ):
+
             gr.Markdown(
                 """
-                ### 📅 Date Tool
+                ## 📅 Date Calculator
 
                 Calculate future or past dates.
                 """
             )
 
-        with gr.Column(elem_classes="tool-card"):
+
+        with gr.Column(
+            elem_classes="tool-card"
+        ):
+
             gr.Markdown(
                 """
-                ### 💰 Expense Tool
+                ## 💰 Expense Analysis
 
                 Calculate expenses and remaining balance.
                 """
             )
 
-        with gr.Column(elem_classes="tool-card"):
+
+        with gr.Column(
+            elem_classes="tool-card"
+        ):
+
             gr.Markdown(
                 """
-                ### 🧠 Decision Tool
+                ## 🧠 Budget Decision
 
                 Generate practical recommendations.
                 """
@@ -134,62 +230,332 @@ with gr.Blocks(
     gr.Markdown("---")
 
 
-    # --------------------------------------------------------
-    # CHAT INTERFACE
-    # --------------------------------------------------------
+    # ========================================================
+    # CHAT + ACTIVITY
+    # ========================================================
 
-    chatbot = gr.ChatInterface(
+    with gr.Row():
 
-    fn=chat_with_agent,
 
-    title="💬 Talk to LifeOps",
+        # ----------------------------------------------------
+        # CHAT AREA
+        # ----------------------------------------------------
 
-    description=(
-        "Describe your everyday situation. "
-        "LifeOps will analyze it, use the appropriate "
-        "tools, and provide a practical recommendation."
-    ),
+        with gr.Column(scale=3):
 
-    examples=[
-        "What time is it now?",
-        "What date will it be 15 days from today?",
-        (
-            "I have ₹5000 and my expenses are "
-            "₹500, ₹300 and ₹700. "
-            "How much money will I have left?"
-        ),
-        (
-            "I have ₹5000 and my expenses are "
-            "₹500, ₹300 and ₹700. "
-            "I have an important event 10 days from now. "
-            "Tell me the event date, remaining money, "
-            "current time and give me a practical "
-            "recommendation."
-        )
-    ],
+            gr.Markdown(
+                """
+                ## 💬 Talk to LifeOps
 
-    textbox=gr.Textbox(
-        placeholder="💭 Describe your situation...",
-        lines=3,
-        submit_btn="🚀 Send"
+                Tell the agent what you're dealing with.
+                """
+            )
+
+            chatbot = gr.Chatbot(
+                height=500,
+                label="LifeOps Conversation"
+            )
+
+            with gr.Row():
+
+                message_box = gr.Textbox(
+                    placeholder=(
+                        "💭 Describe your situation..."
+                    ),
+                    lines=3,
+                    scale=5,
+                    show_label=False
+                )
+
+                send_button = gr.Button(
+                    "🚀 Send",
+                    variant="primary",
+                    scale=1
+                )
+
+
+            clear_button = gr.Button(
+                "🗑️ Clear Conversation"
+            )
+
+
+        # ----------------------------------------------------
+        # AGENT ACTIVITY
+        # ----------------------------------------------------
+
+        with gr.Column(
+            scale=1,
+            elem_classes="activity-panel"
+        ):
+
+            activity_output = gr.Markdown(
+                """
+                ### 🛠️ Agent Activity
+
+                Tools selected by LifeOps will appear here.
+
+                ---
+
+                **Agent Workflow**
+
+                🧠 Understand
+
+                ↓
+
+                🔍 Analyze
+
+                ↓
+
+                🛠️ Select Tools
+
+                ↓
+
+                🔗 Combine Results
+
+                ↓
+
+                💡 Recommend
+                """
+            )
+
+
+    # ========================================================
+    # SEND FUNCTION
+    # ========================================================
+
+    def send_message(message, history):
+
+        if not message or not message.strip():
+
+            return (
+                history,
+                "",
+                "### 🛠️ Agent Activity\n\n"
+                "⚠️ Please enter a situation."
+            )
+
+        try:
+
+            result = run_agent(message)
+
+            response = result["response"]
+            tools_used = result["tools_used"]
+
+            # Add user message
+            history.append(
+                {
+                    "role": "user",
+                    "content": message
+                }
+            )
+
+            # Add agent response
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": response
+                }
+            )
+
+
+            # Build activity
+            if tools_used:
+
+                activity = (
+                    "### 🛠️ Agent Activity\n\n"
+                )
+
+                for tool in tools_used:
+
+                    icon, name = TOOL_INFO.get(
+                        tool,
+                        ("🔧", tool)
+                    )
+
+                    activity += (
+                        f"✅ {icon} **{name}**\n"
+                    )
+
+                activity += (
+                    "\n---\n"
+                    "🧠 *LifeOps selected these tools "
+                    "autonomously.*"
+                )
+
+            else:
+
+                activity = (
+                    "### 🛠️ Agent Activity\n\n"
+                    "ℹ️ No external tools were required."
+                )
+
+
+            return history, "", activity
+
+
+        except Exception as error:
+
+            history.append(
+                {
+                    "role": "user",
+                    "content": message
+                }
+            )
+
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": (
+                        "⚠️ Something went wrong.\n\n"
+                        f"`{str(error)}`"
+                    )
+                }
+            )
+
+            return (
+                history,
+                "",
+                "### ❌ Error\n\n"
+                "Something went wrong while processing your request."
+            )
+
+
+    # ========================================================
+    # BUTTON CONNECTIONS
+    # ========================================================
+
+    send_button.click(
+        send_message,
+        inputs=[
+            message_box,
+            chatbot
+        ],
+        outputs=[
+            chatbot,
+            message_box,
+            activity_output
+        ]
     )
-)
 
 
-    # --------------------------------------------------------
-    # CAPABILITIES
-    # --------------------------------------------------------
+    message_box.submit(
+        send_message,
+        inputs=[
+            message_box,
+            chatbot
+        ],
+        outputs=[
+            chatbot,
+            message_box,
+            activity_output
+        ]
+    )
+
+
+    # ========================================================
+    # CLEAR BUTTON
+    # ========================================================
+
+    def clear_chat():
+
+        return [], "", (
+            "### 🛠️ Agent Activity\n\n"
+            "Conversation cleared.\n\n"
+            "Ready for a new situation."
+        )
+
+
+    clear_button.click(
+        clear_chat,
+        outputs=[
+            chatbot,
+            message_box,
+            activity_output
+        ]
+    )
+
+
+    # ========================================================
+    # EXAMPLES
+    # ========================================================
+
+    gr.Markdown("---")
+
+    gr.Markdown(
+        """
+        ## 💡 Try These Examples
+        """
+    )
+
+    gr.Examples(
+        examples=[
+            ["What time is it now?"],
+
+            ["What date will it be 15 days from today?"],
+
+            [
+                "I have ₹5000 and my expenses are "
+                "₹500, ₹300 and ₹700. "
+                "How much money will I have left?"
+            ],
+
+            [
+                "I have ₹5000 and my expenses are "
+                "₹500, ₹300 and ₹700. "
+                "I have an important event 10 days "
+                "from now. Tell me the event date, "
+                "remaining money, current time and "
+                "give me a practical recommendation."
+            ]
+        ],
+        inputs=message_box
+    )
+
+
+    # ========================================================
+    # HOW IT WORKS
+    # ========================================================
+
+    gr.Markdown("---")
+
+    gr.Markdown(
+        """
+        ## ⚡ How LifeOps Works
+
+        | Stage | What happens |
+        |---|---|
+        | 🧠 **Understand** | Understand the user's situation |
+        | 🔍 **Analyze** | Identify required information |
+        | 🛠️ **Select Tools** | Choose useful tools automatically |
+        | 🔗 **Combine** | Chain results when necessary |
+        | 💡 **Recommend** | Give a practical recommendation |
+
+        ### The key idea
+
+        **LifeOps doesn't simply execute commands.**
+
+        The AI agent decides **which tools are useful,
+        when they are needed, and how their results
+        should be combined.**
+        """
+    )
+
+
+    # ========================================================
+    # FOOTER
+    # ========================================================
 
     gr.Markdown(
         """
         ---
 
-        ### 🔧 Available Agent Capabilities
+        <div class="footer">
 
-        `Time` • `Date Calculation` • `Expense Analysis` • `Budget Decision`
+        🧠 <b>LifeOps Agent</b> • AI Decision Support System
 
-        **LifeOps doesn't just answer — it analyzes, uses tools,
-        and makes practical decisions.**
+        Built with Python • Groq • GPT-OSS 120B • Gradio
+
+        </div>
         """
     )
 
